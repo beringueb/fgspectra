@@ -451,7 +451,7 @@ class SPTLogDecorrelatedFactorizedCrossSpectrum(Model):
 
         return {type(self).__name__: [decor_repr, sed_repr, cl_repr]}
 
-    def eval(self, sigma=None, nu_0=None, sed_kwargs={}, cl_kwargs={}):
+    def eval(self, bandint_freqs=None, sigma=None, nu_0=None, sed_kwargs={}, cl_kwargs={}):
         """Compute the model at frequency and ell combinations.
 
         Parameters
@@ -467,7 +467,8 @@ class SPTLogDecorrelatedFactorizedCrossSpectrum(Model):
         cross : ndarray
             Cross-spectrum. The shape is ``(..., freq, freq, ell)``.
         """
-        nu_array = sed_kwargs['nu']
+        nu_array = bandint_freqs
+        assert len(nu_array) == len(sed_kwargs['nu'])
         nu_0_sed = sed_kwargs['nu_0']
         f_decor = np.empty((len(nu_array), len(nu_array)))
         for i, nu_i in enumerate(nu_array):
