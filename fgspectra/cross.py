@@ -365,6 +365,124 @@ class DecorrelatedFactorizedCrossSpectrum(Model):
 
         return res
     
+class SPTLogDecorrelatedFactorizedCrossSpectrum(Model):
+    r"""Decorrelated factorized cross spectrum TODO: Description 
+
+    Cross-spectrum of **one** component for which the scaling in frequency
+    and in multipoles are factorizable. The scaling in frequency is not exact
+    and some decorrelation is specified.
+
+    .. math:: xC_{\ell}^{(ij)} = \Delta_{\rm decor}f_{\rm decor}(\nu_i, \nu_j) f(\nu_j) f(\nu_i) C_{\ell}
+
+    This model implements a logarithmic decorrelation (e.g. 1606.07335, 1810.05216)
+    such that the cross correlation between two frequencies ($\nu_1$, $nu_2$) is multiplied by
+    $\Delta_{\rm decor} f_{\rm decor}(\nu_1, \nu_2)$ with
+
+    .. math:: f_{\rm decor}(\nu_1, \nu_2) = \frac{\ln^2(\nu_1/\nu_2)}{\ln^2(\nu_0/\nu_0^\prime)}
+
+    Parameters
+    ----------
+    sed : callable
+        :math:`f(\nu)`. It returns an array with shape ``(..., freq)``.
+        It can be :class:`fgspectra.frequency.SED`.
+    cl : callable
+        :math:`C_\ell`. It returns an array with shape ``(..., ell)``.
+        It can be :class:`fgspectra.power.PowerSpectrum`
+
+    Note
+    ----
+    The two (optional) sets of extra dimensions ``...`` must be
+    broadcast-compatible.
+    """
+
+    def __init__(self, sed, cl, **kwargs):
+        self._sed = sed
+        self._cl = cl
+        self.set_defaults(**kwargs)
+
+    def set_defaults(self, **kwargs):
+        if "sed_kwargs" in kwargs:
+            self._sed.set_defaults(**kwargs["sed_kwargs"])
+        if "cl_kwargs" in kwargs:
+            self._cl.set_defaults(**kwargs["cl_kwargs"])
+        kw_decor = {
+            key: kwargs[key]
+            for key in kwargs.keys()
+            if key not in ["sed_kwargs", "cl_kwargs"]
+        }
+        super().set_defaults(**kw_decor)
+
+
+    @property
+    def defaults(self):
+        # Retrieve the defaults from the parent class
+        parent_defaults = super().defaults
+
+        # Combine with the sed and cl defaults, filtering out any non-relevant keys
+        combined_defaults = {
+            key: parent_defaults[key]
+            for key in parent_defaults
+            if key not in ["sed_kwargs", "cl_kwargs"]
+        }
+        return {
+            **combined_defaults,
+            "sed_kwargs": self._sed.defaults,
+            "cl_kwargs": self._cl.defaults,
+        }
+
+
+    def _get_repr(self):
+        decor_repr = super()._get_repr()
+        key = list(decor_repr.keys())[0]
+        decor_repr[key] = {
+            k: decor_repr[key][k]
+            for k in decor_repr[key].keys()
+            if k not in ["sed_kwargs", "cl_kwargs"]
+        }
+        decor_repr["Decorrelation"] = decor_repr.pop(key)
+
+        sed_repr = self._sed._get_repr()
+        key = list(sed_repr.keys())[0]
+        sed_repr[key + " (SED)"] = sed_repr.pop(key)
+
+        cl_repr = self._cl._get_repr()
+        key = list(cl_repr.keys())[0]
+        cl_repr[key + " (Cl)"] = cl_repr.pop(key)
+
+        return {type(self).__name__: [decor_repr, sed_repr, cl_repr]}
+
+    def eval(self, sigma=None, nu_0=None, sed_kwargs={}, cl_kwargs={}):
+        """Compute the model at frequency and ell combinations.
+
+        Parameters
+        ----------
+        sed_args : list
+            Arguments for which the `sed` is evaluated.
+        cl_args : list
+            Arguments for which the `cl` is evaluated.
+        sigma : float
+            Decorrelation factor
+        Returns
+        -------
+        cross : ndarray
+            Cross-spectrum. The shape is ``(..., freq, freq, ell)``.
+        """
+        nu_array = sed_kwargs['nu']
+        nu_0_sed = sed_kwargs['nu_0']
+        f_decor = np.empty((len(nu_array), len(nu_array)))
+        for i, nu_i in enumerate(nu_array):
+            for j, nu_j in enumerate(nu_array):
+                f_decor[i,j] = (nu_i*nu_j/nu_0_sed**2)**(np.log(nu_i*nu_j/nu_0**2)/2 * sigma )
+
+        f_nu = self._sed(**sed_kwargs)
+        cl = self._cl(**cl_kwargs)
+        if f_nu.shape[0] != cl.shape[-1] or (f_nu.shape[0] == 1 and cl.shape[-1] == 1):
+            f_nu = f_nu[np.newaxis]
+
+        res = np.einsum("ij,l...i,l...j,...l->...ijl", f_decor, f_nu, f_nu, cl)
+
+        return res
+    
 
 class LogDecorrelatedFactorizedCrossSpectrum(Model):
     r"""Decorrelated factorized cross spectrum
