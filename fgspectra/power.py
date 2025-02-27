@@ -384,4 +384,37 @@ class SZxCIB_Addison2012(PowerSpectraAndCovariance):
         super().__init__(*power_spectra, **kwargs)
 
 
-# CMB template cls?
+class gal_Planck(Model):
+    def __init__(self, **kwargs):
+        self._cl = np.zeros((3,3,2601))
+        #100x100
+        ell, spec, _ = np.genfromtxt(_get_power_file('gal_planck_100'), unpack=True)
+        self._cl[0,0,ell.astype(int)] = spec * ell * (ell + 1.0) / (2.0 * np.pi)
+        self._cl[0,0] /= self._cl[0,0,200]
+        #143x143
+        ell, spec, _ = np.genfromtxt(_get_power_file('gal_planck_143'), unpack=True)
+        self._cl[1,1,ell.astype(int)] = spec * ell * (ell + 1.0) / (2.0 * np.pi)
+        self._cl[1,1] /= self._cl[1,1,200]
+        #143x217 & 217x143
+        ell, spec, _ = np.genfromtxt(_get_power_file('gal_planck_143x217'), unpack=True)
+        self._cl[1,2,ell.astype(int)] = spec * ell * (ell + 1.0) / (2.0 * np.pi)
+        self._cl[1,2] /= self._cl[1,2,200]
+        self._cl[2,1,ell.astype(int)] = spec * ell * (ell + 1.0) / (2.0 * np.pi)
+        self._cl[2,1] /= self._cl[2,1,200]
+        #217x217
+        ell, spec, _ = np.genfromtxt(_get_power_file('gal_planck_217'), unpack=True)
+        self._cl[2,2,ell.astype(int)] = spec * ell * (ell + 1.0) / (2.0 * np.pi)
+        self._cl[2,2] /= self._cl[2,2,200]
+        self.set_defaults(**kwargs)
+
+    def eval(self, ell=None, amp=1.):
+        """Compute the power spectrum with the given ell and parameters."""
+        if np.isscalar(ell):
+            ell = np.array(ell)[..., np.newaxis]
+        res = np.tile(np.nan, (3,3) + ell.shape)
+        res[..., ell <= 2600] = self._cl[..., ell[ell <= 2600]]
+        amp = np.array(amp)[..., np.newaxis]
+
+        return amp*res
+
+
