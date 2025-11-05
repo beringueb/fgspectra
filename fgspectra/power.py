@@ -140,17 +140,22 @@ class kSZ_bat(PowerSpectrumFromFile):
         """Intialize object with parameters."""
         super().__init__(_get_power_file("ksz_bat"), **kwargs)
 
+
 class tSZ_planck_highL(PowerSpectrumFromFile):
     """PowerSpectrum for Thermal Sunyaev Zel'dovich (from Planck analysis) extended to higher \ell"""
+
     def __init__(self):
         """Initialize object with parameters."""
-        super().__init__(_get_power_file('tsz_planck_highL'))
+        super().__init__(_get_power_file("tsz_planck_highL"))
+
 
 class kSZ_planck_highL(PowerSpectrumFromFile):
     """PowerSpectrum for Kinematic Sunyaev Zel'dovich (from Planck analysis) extended to higher \ell"""
+
     def __init__(self):
         """Initialize object with parameters."""
-        super().__init__(_get_power_file('ksz_planck_highL'))
+        super().__init__(_get_power_file("ksz_planck_highL"))
+
 
 class PowerLaw(Model):
     r"""Power law
@@ -394,22 +399,23 @@ class SZxCIB_Addison2012(PowerSpectraAndCovariance):
         ]
         super().__init__(*power_spectra, **kwargs)
 
+
 class SZxCIB_planck_highL(PowerSpectraAndCovariance):
     """PowerSpectrum for SZxCIB (from Planck), extended to higher \ell"""
 
     def __init__(self, **kwargs):
         """Intialize object with parameters."""
         power_spectra = [
-            PowerSpectrumFromFile(_get_power_file('tsz_planck_highL')),
-            PowerSpectrumFromFile(_get_power_file('cib_planck_highL')),
-            PowerSpectrumFromFile(_get_power_file('tszxcib_planck_highL'))
+            PowerSpectrumFromFile(_get_power_file("tsz_planck_highL")),
+            PowerSpectrumFromFile(_get_power_file("cib_planck_highL")),
+            PowerSpectrumFromFile(_get_power_file("tszxcib_planck_highL")),
         ]
         super().__init__(*power_spectra, **kwargs)
 
 
 class CIB_planck_highL(PowerSpectrumFromFile):
     """PowerSpectrum for CIB from Planck analysis) extended to higher \ell"""
+
     def __init__(self):
         """Initialize object with parameters."""
-        super().__init__(_get_power_file('cib_planck_highL'))
-
+        super().__init__(_get_power_file("cib_planck_highL"))

@@ -473,6 +473,7 @@ class SZxCIB_planck_highL(CorrelatedFactorizedCrossSpectrum):
         super().__init__(sed, SZxCIB_planck_highL())
         self.set_defaults(**kwargs)
 
+
 class SZxCIB_Choi2020(CorrelatedFactorizedCrossSpectrum):
     def __init__(self, **kwargs):
         sed = fgf.Join(fgf.ThermalSZ(), fgf.CIB())
